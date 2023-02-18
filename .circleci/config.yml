@@ -1,4 +1,9 @@
-version: 2
+version: 2.1
+
+
+orbs:
+  aws-ecr: circleci/aws-ecr@8.2.1
+  aws-ecs: circleci/aws-ecs@3.2
 
 jobs:
   lint-test:
@@ -30,9 +35,16 @@ jobs:
       # - run:
       #     name: Integration test
       #     command: npm run test-integration
-
+  
 workflows:
-  version: 2
-  lint-test:
+  build_and_push_image:
     jobs:
       - lint-test
+      - aws-ecr/build-and-push-image:
+          requires:
+            - lint-test
+          context: dev
+          dockerfile: Dockerfile
+          path: .
+          repo: buychain-dev-auth-api
+          tag: "latest"
