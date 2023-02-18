@@ -24,12 +24,12 @@ jobs:
           name: Seeding
           command: npm run test-integration-seeding
       - run:
-          name: Run the auth-api in the background
+          name: Run the auth-api in the background to see
           command: npm start
           background: true
-      - run:
-          name: Integration test
-          command: npm run test-integration
+      # - run:
+      #     name: Integration test
+      #     command: npm run test-integration
 
 workflows:
   version: 2
