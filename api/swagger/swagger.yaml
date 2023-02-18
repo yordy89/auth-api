@@ -1,0 +1,177 @@
+swagger: '2.0'
+info:
+  description: Auth API Definition.
+  version: 1.0.0
+  title: Auth API
+  contact:
+    email: hambardzumyan.albert@gmail.com
+host: localhost:3010
+basePath: /v1
+consumes:
+  - application/x-www-form-urlencoded
+  - application/json
+produces:
+  - application/json
+tags:
+  - name: oauth2
+    description: oauth2 API
+  - name: status
+    description: status API
+schemes:
+  - http
+  - https
+
+paths:
+  /oauth2/token:
+    post:
+      summary: Token.
+      description: Token.
+      tags:
+        - oauth2
+      operationId: token
+      parameters:
+        - name: authorization
+          in: header
+          description: Authorization.
+          type: string
+          default: Basic NXJxaDFkcXZrN3JmdDdpYjZlaDBhbHY1bXUydjRmOkpKdW00NldvV2NNeW5vVTFDV2xraEw=
+          required: true
+        - name: grant_type
+          in: formData
+          description: Grant type.
+          type: string
+          enum: [ password, refresh_token ]
+          required: true
+        - name: username
+          in: formData
+          type: string
+          description: Username.
+          required: false
+        - name: password
+          in: formData
+          type: string
+          format: password
+          description: Password.
+          required: false
+        - name: refreshToken
+          in: formData
+          type: string
+          description: Refresh token.
+          required: false
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      responses:
+        '201':
+          description: Token.
+          schema:
+            $ref: '#/definitions/Token'
+
+  /oauth2/authenticate:
+    get:
+      summary: Authenticate.
+      description: Authenticate.
+      tags:
+        - oauth2
+      operationId: authenticate
+      parameters:
+        - name: authorization
+          in: header
+          description: Authorization.
+          type: string
+          required: true
+        - name: scope
+          in: header
+          description: Sope.
+          type: array
+          required: false
+          items:
+            type: string
+          collectionFormat: multi
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Token.
+          schema:
+            $ref: '#/definitions/Token'
+
+  /status:
+    get:
+      summary: Get status.
+      description: Get status.
+      tags:
+        - status
+      operationId: getStatus
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Status.
+          schema:
+            $ref: '#/definitions/Status'
+
+definitions:
+  Status:
+    type: object
+    properties:
+      name:
+        type: string
+        readOnly: true
+      version:
+        type: string
+        readOnly: true
+
+  Token:
+    type: object
+    properties:
+      accessToken:
+        type: string
+        maxLength: 60
+        description: Unique.
+        readOnly: true
+      accessTokenExpiresAt:
+        type: string
+        description: The date-time notation as defined by RFC 3339, section 5.6.
+        readOnly: true
+      refreshToken:
+        type: string
+        maxLength: 60
+        description: Unique.
+        readOnly: true
+      refreshTokenExpiresAt:
+        type: string
+        description: The date-time notation as defined by RFC 3339, section 5.6.
+        readOnly: true
+      scope:
+        type: string
+        readOnly: true
+      client:
+        type: object
+        readOnly: true
+        properties:
+          id:
+            type: string
+            maxLength: 45
+      user:
+        type: object
+        readOnly: true
+        properties:
+          id:
+            type: string
+            minLength: 24
+            maxLength: 24
+            description: Hex, ref Users.
+          companyId:
+            type: string
+            minLength: 24
+            maxLength: 24
+            description: Hex, ref Companies.
+      access_token:
+        type: string
+        readOnly: true

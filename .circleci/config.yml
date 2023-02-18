@@ -1,0 +1,38 @@
+version: 2
+
+jobs:
+  lint-test:
+    working_directory: ~/auth-api
+    docker:
+      - image: circleci/node:16
+      - image: circleci/mongo:5.0
+    environment:
+      - NODE_ENV: test
+      - MONGODB_URL: mongodb://localhost:27017/buy-chain
+    steps:
+      - checkout
+      - run:
+          name: Install node packages from package.json
+          command: npm install
+      - run:
+          name: Lint
+          command: npm run lint-no-fix
+      - run:
+          name: Unit test
+          command: npm run test-unit
+      - run:
+          name: Seeding
+          command: npm run test-integration-seeding
+      - run:
+          name: Run the auth-api in the background
+          command: npm start
+          background: true
+      - run:
+          name: Integration test
+          command: npm run test-integration
+
+workflows:
+  version: 2
+  lint-test:
+    jobs:
+      - lint-test
