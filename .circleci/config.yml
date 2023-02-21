@@ -37,7 +37,7 @@ jobs:
       #     command: npm run test-integration
   
 workflows:
-  test-and-deploy:
+  build_and_push_image:
     jobs:
       - lint-test
       - aws-ecr/build-and-push-image:
