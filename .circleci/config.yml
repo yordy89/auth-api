@@ -40,11 +40,11 @@ workflows:
   build_and_push_image:
     jobs:
       - lint-test
-      - aws-ecr/build-and-push-image:
-          requires:
-            - lint-test
-          context: dev
-          dockerfile: Dockerfile
-          path: .
-          repo: buychain-dev-auth-api
-          tag: "latest"
+      # - aws-ecr/build-and-push-image:
+      #     requires:
+      #       - lint-test
+      #     context: dev
+      #     dockerfile: Dockerfile
+      #     path: .
+      #     repo: buychain-dev-auth-api
+      #     tag: "latest"
