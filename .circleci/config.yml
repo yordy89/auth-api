@@ -1,9 +1,42 @@
 version: 2.1
 
-
 orbs:
-  aws-ecr: circleci/aws-ecr@8.2.1
-  aws-ecs: circleci/aws-ecs@3.2
+  aws-ecs: circleci/aws-ecs@3.2.0
+  aws-cli: circleci/aws-cli@3.1
+
+commands:
+  service-build:
+    parameters:
+      stack:
+        default: 'buychain-dev'
+        type: string
+    steps:
+      - setup_remote_docker:
+          version: 20.10.14
+          docker_layer_caching: true
+      - run:
+          name: Tag image
+          command: echo "export TAG=latest" >> $BASH_ENV
+      - run:
+          name: Build image
+          command: docker build --build-arg NPM_TOKEN=$NPM_TOKEN -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/<< parameters.stack >>-$REPO:$TAG .
+      - run:
+          name: Tag image
+          command: docker tag $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/<< parameters.stack >>-$REPO:$TAG $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/<< parameters.stack >>-$REPO:$TAG
+      - aws-cli/setup 
+      - run:
+          name: Login to Amazon ECR
+          command: aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+      - run:
+          name: Push image
+          command: docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/<< parameters.stack >>-$REPO:$TAG
+  front-deploy:
+    parameters:
+      stage:
+        default: 'DEV'
+        type: string
+    steps:
+      - run: aws s3 sync dist/frontend-gzip/ s3://${S3_BUCKET_<< parameters.stage >>}/ --delete --exact-timestamps --content-encoding gzip;
 
 jobs:
   lint-test:
@@ -35,16 +68,53 @@ jobs:
       # - run:
       #     name: Integration test
       #     command: npm run test-integration
-  
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+  development-build-and-push-image:
+    docker:
+      - image: 'circleci/node:16'
+    steps:
+      - attach_workspace:
+          at: .
+      - service-build:
+          stack: 'buychain-dev'
+  demo-build-and-push-image:
+    docker:
+      - image: 'circleci/node:16'
+    steps:
+      - attach_workspace:
+          at: .
+      - service-build:
+          stack: 'buychain-demo'
+  production-build-and-push-image:
+    docker:
+      - image: 'circleci/node:16'
+    steps:
+      - attach_workspace:
+          at: .
+      - service-build:
+          stack: 'buychain-prod'
+
 workflows:
   build_and_push_image:
     jobs:
       - lint-test
-      # - aws-ecr/build-and-push-image:
-      #     requires:
-      #       - lint-test
-      #     context: dev
-      #     dockerfile: Dockerfile
-      #     path: .
-      #     repo: buychain-dev-auth-api
-      #     tag: "latest"
+      - development-build-and-push-image:
+          context: dev
+          requires:
+            - lint-test
+          filters:
+            branches:
+              only: development
+      - aws-ecs/deploy-service-update:
+          context: dev
+          requires:
+            - development-build-and-push-image 
+          family: "buychain-dev-auth-api"
+          service-name: "buychain-dev-auth-api-service"
+          cluster: "buychain-dev-cluster-1"
+          container-image-name-updates: "container=buychain-dev-auth-api,image-and-tag=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/buychain-dev-$REPO:$TAG"
+          force-new-deployment: true
+          verify-revision-is-deployed: true
