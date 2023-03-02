@@ -14,12 +14,11 @@ commands:
       - setup_remote_docker:
           version: 20.10.14
           docker_layer_caching: true
-      # - run:
-      #     name: Tag image
-      #     command: echo "export TAG=$(node -p "require('./package.json').version"))" >> $BASH_ENV
       - run:
           name: Tag image
-          command: echo "export TAG=0.23.0" >> $BASH_ENV
+          command: |
+            tag=$(echo $CIRCLE_SHA1 | cut -c 1-7)
+            echo "export TAG=$tag" >> $BASH_ENV
       - run:
           name: Build image
           command: docker build --build-arg NPM_TOKEN=$NPM_TOKEN -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/<< parameters.stack >>-$REPO:$TAG .
@@ -36,6 +35,10 @@ commands:
       - run:
           name: Export stack name
           command: echo "export STACK_NAME=<< parameters.stack >>" >> $BASH_ENV
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
 jobs:
   lint-test:
     working_directory: ~/auth-api
@@ -114,7 +117,7 @@ workflows:
           family: "buychain-dev-$REPO"
           service-name: "buychain-dev-$REPO-service"
           cluster: "buychain-dev-cluster-1"
-          container-image-name-updates: "container=buychain-dev-$REPO,image-and-tag=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/buychain-dev-$REPO:latest"
+          container-image-name-updates: "container=buychain-dev-$REPO,image-and-tag=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/buychain-dev-$REPO:$(echo $CIRCLE_SHA1 | cut -c 1-7)"
           force-new-deployment: true
           verify-revision-is-deployed: true
           filters:
