@@ -33,14 +33,6 @@ commands:
       - run:
           name: Export stack name
           command: echo "export STACK_NAME=<< parameters.stack >>" >> $BASH_ENV
-  service-deploy:
-    parameters:
-      stage:
-        default: 'DEV'
-        type: string
-    steps:
-      - run: aws s3 sync dist/frontend-gzip/ s3://${S3_BUCKET_<< parameters.stage >>}/ --delete --exact-timestamps --content-encoding gzip;
-
 jobs:
   lint-test:
     working_directory: ~/auth-api
