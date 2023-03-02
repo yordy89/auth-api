@@ -16,7 +16,7 @@ commands:
           docker_layer_caching: true
       - run:
           name: Tag image
-          command: echo "export TAG=latest" >> $BASH_ENV
+          command: echo "export TAG=$(node -p "require('./package.json').version"))" >> $BASH_ENV
       - run:
           name: Build image
           command: docker build --build-arg NPM_TOKEN=$NPM_TOKEN -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/<< parameters.stack >>-$REPO:$TAG .
