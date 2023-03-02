@@ -3,7 +3,7 @@ version: 2.1
 orbs:
   aws-ecs: circleci/aws-ecs@3.2.0
   aws-cli: circleci/aws-cli@3.1
-
+  
 commands:
   service-build:
     parameters:
@@ -30,14 +30,9 @@ commands:
       - run:
           name: Push image
           command: docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/<< parameters.stack >>-$REPO:$TAG
-  front-deploy:
-    parameters:
-      stage:
-        default: 'DEV'
-        type: string
-    steps:
-      - run: aws s3 sync dist/frontend-gzip/ s3://${S3_BUCKET_<< parameters.stage >>}/ --delete --exact-timestamps --content-encoding gzip;
-
+      - run:
+          name: Export stack name
+          command: echo "export STACK_NAME=<< parameters.stack >>" >> $BASH_ENV
 jobs:
   lint-test:
     working_directory: ~/auth-api
@@ -109,12 +104,65 @@ workflows:
             branches:
               only: development
       - aws-ecs/deploy-service-update:
+          name: deploy-service-update-dev
           context: dev
           requires:
             - development-build-and-push-image 
-          family: "buychain-dev-auth-api"
-          service-name: "buychain-dev-auth-api-service"
+          family: "buychain-dev-$REPO"
+          service-name: "buychain-dev-$REPO-service"
           cluster: "buychain-dev-cluster-1"
-          container-image-name-updates: "container=buychain-dev-auth-api,image-and-tag=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/buychain-dev-$REPO:$TAG"
+          container-image-name-updates: "container=buychain-dev-$REPO,image-and-tag=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/buychain-dev-$REPO:latest"
           force-new-deployment: true
           verify-revision-is-deployed: true
+          filters:
+            branches:
+              only: development
+      - demo-build-and-push-image:
+          context: dev
+          requires:
+            - lint-test
+          filters:
+            branches:
+              only: main
+      - aws-ecs/deploy-service-update:
+          name: deploy-service-update-demo
+          context: dev
+          requires:
+            - demo-build-and-push-image
+          family: "buychain-demo-$REPO"
+          service-name: "buychain-demo-$REPO-service"
+          cluster: "buychain-demo>-cluster-1"
+          container-image-name-updates: "container=buychain-demo-$REPO,image-and-tag=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/buychain-demo>-$REPO:latest"
+          force-new-deployment: true
+          verify-revision-is-deployed: true
+          filters:
+            branches:
+              only: main
+      - hold-deploy-prod:
+          type: approval
+          requires:
+            - deploy-service-update-demo
+          filters:
+            branches:
+              only: main
+      - production-build-and-push-image:
+          context: dev
+          requires:
+            - hold-deploy-prod
+          filters:
+            branches:
+              only: main
+      - aws-ecs/deploy-service-update:
+          name: deploy-service-update-prod
+          context: dev
+          requires:
+            - production-build-and-push-image
+          family: "buychain-prod-$REPO"
+          service-name: "buychain-prod-$REPO-service"
+          cluster: "buychain-prod-cluster-1"
+          container-image-name-updates: "container=buychain-prod-$REPO,image-and-tag=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/buychain-prod-$REPO:latest"
+          force-new-deployment: true
+          verify-revision-is-deployed: true
+          filters:
+            branches:
+              only: main
