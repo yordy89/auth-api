@@ -19,6 +19,9 @@ commands:
           command: |
             tag=$(echo $CIRCLE_SHA1 | cut -c 1-7)
             echo "export TAG=$tag" >> $BASH_ENV
+      # - run:
+      #     name: Export project version
+      #     command: echo "export PROJECT_VERSION=$(node -p -e "require('./package.json').version")" >> $BASH_ENV
       - run:
           name: Build image
           command: docker build --build-arg NPM_TOKEN=$NPM_TOKEN -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/<< parameters.stack >>-$REPO:$TAG .
@@ -99,7 +102,7 @@ jobs:
           stack: 'buychain-prod'
 
 workflows:
-  build_and_push_image:
+  build_push_image_and_deploy:
     jobs:
       - lint-test
       - development-build-and-push-image:
@@ -114,11 +117,15 @@ workflows:
           context: dev
           requires:
             - development-build-and-push-image 
+          deployment-controller: CODE_DEPLOY
+          codedeploy-application-name: "buychain-dev-codedeploy-application"
+          codedeploy-deployment-group-name: "buychain-dev-$REPO-group"
+          codedeploy-load-balanced-container-name: "buychain-dev-$REPO"
+          codedeploy-load-balanced-container-port: 3010
           family: "buychain-dev-$REPO"
           service-name: "buychain-dev-$REPO-service"
           cluster: "buychain-dev-cluster-1"
           container-image-name-updates: "container=buychain-dev-$REPO,image-and-tag=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/buychain-dev-$REPO:$(echo $CIRCLE_SHA1 | cut -c 1-7)"
-          force-new-deployment: true
           verify-revision-is-deployed: true
           filters:
             branches:

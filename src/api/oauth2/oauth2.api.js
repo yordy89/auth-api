@@ -6,4 +6,8 @@ router.post('/token', OAuth2.token)
 
 router.get('/authenticate', OAuth2.authenticate)
 
+router.get('/testing', (req, res, next) => {
+  res.send('Hello World!')
+})
+
 module.exports = router
