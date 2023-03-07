@@ -119,7 +119,7 @@ workflows:
             - development-build-and-push-image 
           deployment-controller: CODE_DEPLOY
           codedeploy-application-name: "buychain-dev-codedeploy-application"
-          codedeploy-deployment-group-name: "buychain-dev-$REPO-group"
+          codedeploy-deployment-group-name: "buychain-dev-$REPO-deployment-group"
           codedeploy-load-balanced-container-name: "buychain-dev-$REPO"
           codedeploy-load-balanced-container-port: 3010
           family: "buychain-dev-$REPO"
@@ -127,6 +127,7 @@ workflows:
           cluster: "buychain-dev-cluster-1"
           container-image-name-updates: "container=buychain-dev-$REPO,image-and-tag=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/buychain-dev-$REPO:$(echo $CIRCLE_SHA1 | cut -c 1-7)"
           verify-revision-is-deployed: true
+          verification-timeout: "20m"
           filters:
             branches:
               only: development
@@ -141,13 +142,18 @@ workflows:
           name: deploy-service-update-demo
           context: dev
           requires:
-            - demo-build-and-push-image
+            - development-build-and-push-image 
+          deployment-controller: CODE_DEPLOY
+          codedeploy-application-name: "buychain-demo-codedeploy-application"
+          codedeploy-deployment-group-name: "buychain-demo-$REPO-deployment-group"
+          codedeploy-load-balanced-container-name: "buychain-demo-$REPO"
+          codedeploy-load-balanced-container-port: 3010
           family: "buychain-demo-$REPO"
           service-name: "buychain-demo-$REPO-service"
-          cluster: "buychain-demo>-cluster-1"
-          container-image-name-updates: "container=buychain-demo-$REPO,image-and-tag=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/buychain-demo>-$REPO:latest"
-          force-new-deployment: true
+          cluster: "buychain-demo-cluster-1"
+          container-image-name-updates: "container=buychain-demo-$REPO,image-and-tag=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/buychain-demo-$REPO:$(echo $CIRCLE_SHA1 | cut -c 1-7)"
           verify-revision-is-deployed: true
+          verification-timeout: "20m"
           filters:
             branches:
               only: main
@@ -169,13 +175,18 @@ workflows:
           name: deploy-service-update-prod
           context: dev
           requires:
-            - production-build-and-push-image
+            - development-build-and-push-image 
+          deployment-controller: CODE_DEPLOY
+          codedeploy-application-name: "buychain-prod-codedeploy-application"
+          codedeploy-deployment-group-name: "buychain-prod-$REPO-deployment-group"
+          codedeploy-load-balanced-container-name: "buychain-prod-$REPO"
+          codedeploy-load-balanced-container-port: 3010
           family: "buychain-prod-$REPO"
           service-name: "buychain-prod-$REPO-service"
           cluster: "buychain-prod-cluster-1"
-          container-image-name-updates: "container=buychain-prod-$REPO,image-and-tag=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/buychain-prod-$REPO:latest"
-          force-new-deployment: true
+          container-image-name-updates: "container=buychain-prod-$REPO,image-and-tag=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/buychain-prod-$REPO:$(echo $CIRCLE_SHA1 | cut -c 1-7)"
           verify-revision-is-deployed: true
+          verification-timeout: "20m"
           filters:
             branches:
               only: main
